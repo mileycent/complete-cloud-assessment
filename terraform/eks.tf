@@ -5,7 +5,7 @@
 resource "aws_eks_cluster" "bedrock" {
   name     = "project-bedrock-cluster"
   role_arn = aws_iam_role.eks_cluster.arn # References your role from iam.tf
-  version  = "1.34"
+  version  = "1.34"                       # Matches your running cluster version
 
   vpc_config {
     subnet_ids              = aws_subnet.private[*].id
@@ -13,6 +13,7 @@ resource "aws_eks_cluster" "bedrock" {
     endpoint_public_access  = true
   }
 
+  # Enforces modern authentication mode to allow API access entries
   access_config {
     authentication_mode                         = "API_AND_CONFIG_MAP"
     bootstrap_cluster_creator_admin_permissions = true
@@ -43,8 +44,8 @@ resource "aws_eks_node_group" "bedrock_nodes" {
 
   instance_types = ["t3.medium"]
 
-  # FIX: Amazon Linux 2 is deprecated on K8s 1.34. Upgraded to Amazon Linux 2023!
-  ami_type = "AL2023_x86_64"
+  # Matches the strict AWS provider string specification for K8s 1.34+
+  ami_type = "AL2023_x86_64_STANDARD"
 }
 
 # ==========================================
@@ -60,9 +61,7 @@ resource "aws_eks_access_entry" "dev_view_entry" {
 resource "aws_eks_access_policy_association" "dev_view_policy" {
   cluster_name  = aws_eks_cluster.bedrock.name
   principal_arn = aws_eks_access_entry.dev_view_entry.principal_arn
-
-  # FIX: Corrected policy ARN formatting pattern for standard Amazon viewer roles
-  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
 
   access_scope {
     type = "cluster"
