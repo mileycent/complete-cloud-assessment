@@ -1,14 +1,5 @@
 terraform {
   required_version = ">= 1.5.0"
-
-  backend "s3" {
-    bucket         = "bedrock-state-mileycent-3682" # Ensure this matches your unique S3 bucket name
-    key            = "state/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = "terraform-lock-table" # Prevents parallel run conflicts in GitHub Actions
-  }
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -17,6 +8,15 @@ terraform {
     kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "~> 2.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+  default_tags {
+    tags = {
+      Project = "karatu-2025-capstone"
     }
   }
 }
