@@ -1,6 +1,6 @@
 variable "student_id" {
-  type        = string
-  default     = "alt-soe-025-3682" # Maps your distinct tracking suffix parameter
+  type    = string
+  default = "alt-soe-025-3682" # Maps your distinct tracking suffix parameter
 }
 
 # ==========================================
