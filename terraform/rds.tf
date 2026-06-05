@@ -48,7 +48,7 @@ resource "aws_db_instance" "mysql_db" {
   max_allocated_storage  = 100
   db_name                = "retail_store"
   username               = "db_admin"
-  password               = "BedrockSecurePass2026!" 
+  password               = "BedrockSecurePass2026!"
   db_subnet_group_name   = aws_db_subnet_group.rds.name # Fixed: Uses group from vpc.tf
   vpc_security_group_ids = [aws_security_group.db_sg.id]
   skip_final_snapshot    = true

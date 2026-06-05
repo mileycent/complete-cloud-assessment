@@ -109,9 +109,9 @@ resource "aws_eks_node_group" "bedrock_nodes" {
 # ==========================================
 
 resource "aws_eks_access_entry" "dev_view_entry" {
-  cluster_name      = aws_eks_cluster.bedrock.name
-  principal_arn     = "arn:aws:iam::336879875316:user/bedrock-dev-view"
-  type              = "STANDARD"
+  cluster_name  = aws_eks_cluster.bedrock.name
+  principal_arn = "arn:aws:iam::336879875316:user/bedrock-dev-view"
+  type          = "STANDARD"
 }
 
 resource "aws_eks_access_policy_association" "dev_view_policy" {
