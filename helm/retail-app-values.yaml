@@ -1,0 +1,59 @@
+# Global configurations applied across all microservices
+global:
+  environment: "production"
+  aws:
+    region: "us-east-1"
+
+# ==============================================================================
+# 1. DATA LAYER OVERRIDES (Bypassing In-Cluster Pods for Managed AWS Services)
+# ==============================================================================
+
+# Catalog Service Backend (Migrated from In-Cluster MySQL to Amazon RDS MySQL)
+catalog:
+  database:
+    # Crucial requirement: Disable the internal, local Helm-managed database pod
+    inCluster: false
+    # Point the application microservice to our managed infrastructure endpoint
+    endpoint: "bedrock-mysql-db.c1234567890.us-east-1.rds.amazonaws.com" # Replace with your real RDS MySQL output string
+    port: 3306
+    dbName: "assets_catalog"
+    secretName: "aws-secretsmanager-catalog-db" # Pulled from Secrets Manager securely
+
+# Carts Service Backend (Migrated from In-Cluster Postgres to Amazon RDS PostgreSQL)
+carts:
+  database:
+    # Disable internal PostgreSQL engine pod creation
+    inCluster: false
+    endpoint: "bedrock-postgres-db.c1234567890.us-east-1.rds.amazonaws.com" # Replace with your real RDS Postgres output string
+    port: 5432
+    dbName: "carts"
+    secretName: "aws-secretsmanager-carts-db"
+
+# Orders Service Backend (Migrated from In-Cluster DynamoDB local container to Amazon DynamoDB)
+orders:
+  database:
+    inCluster: false
+    # Overriding internal storage engines to leverage the managed NoSQL table fabric directly
+    tableName: "bedrock-retail-products"
+    awsServiceIntegration: true
+
+# ==============================================================================
+# 2. ALLOWED IN-CLUSTER TRANSIENT SERVICES
+# ==============================================================================
+
+# Message broker (RabbitMQ) is allowed to remain as a managed pod within the cluster boundaries
+rabbitmq:
+  enabled: true
+  replicaCount: 1
+
+# Session Cache broker (Redis) is allowed to remain as an in-cluster pod
+redis:
+  enabled: true
+  architecture: "standalone"
+
+# ==============================================================================
+# 3. OBSERVABILITY INTEGRATIONS (CloudWatch Shipping configuration)
+# ==============================================================================
+logging:
+  provider: "cloudwatch"
+  logGroupName: "/aws/eks/project-bedrock-cluster/retail-app"

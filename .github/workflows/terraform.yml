@@ -1,0 +1,106 @@
+name: "Project Bedrock IaC Pipeline"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+
+permissions:
+  id-token: write # Required for requesting the AWS JWT OIDC token
+  contents: read  # Required for checking out the source repository
+  pull-requests: write # Required for posting plan comments back to PRs
+
+jobs:
+  terraform:
+    name: "Automate Infrastructure"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+      # 1. Check out the code to the GitHub runner workspace
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # 2. Authenticate to AWS via OIDC (Zero long-lived keys stored)
+      - name: Authenticate to AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }} # e.g., arn:aws:iam::123456789012:role/github-actions-eks-stream
+          aws-region: us-east-1
+
+      # 3. Setup Terraform CLI binaries on the runner
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      # 4. Initialize working backend configurations
+      - name: Terraform Init
+        run: terraform init
+
+      # 5. Execute structural format checking validation
+      - name: Terraform Format Check
+        run: terraform fmt -check
+
+      # 6. Run Execution Simulation Plan
+      - name: Terraform Plan
+        id: plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -no-color -input=false
+        continue-on-error: true
+
+      # 7. Post Plan output directly inside the PR review page panel
+      - name: Update Pull Request Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌
+            #### Terraform Initialization ⚙️
+            #### Terraform Plan 🚀
+            
+            \`\`\`terraform
+            ${process.env.PLAN}
+            \`\`\`
+            
+            *Pushed by: @${context.actor}, Action: \`${context.eventName}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+        env:
+          PLAN: "steps.plan.outputs.stdout"
+
+      # 8. Halt pipeline execution if plan fails on PR phase
+      - name: Terraform Plan Status Evaluation
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      # 9. Apply changes automatically upon merging to Main branch
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+
+      # 10. Automatically compile the grading payload structure artifact
+      - name: Compile and Commit Grading Artifacts
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          terraform output -json > ../grading.json
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add ../grading.json
+          git commit -m "chore: automated grading.json updates [skip ci]" || echo "No modifications detected"
+          git push
