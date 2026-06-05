@@ -4,103 +4,55 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'terraform/**'
   pull_request:
     branches:
       - main
-    paths:
-      - 'terraform/**'
 
 permissions:
-  id-token: write # Required for requesting the AWS JWT OIDC token
-  contents: read  # Required for checking out the source repository
-  pull-requests: write # Required for posting plan comments back to PRs
+  id-token: write # Crucial requirement for AWS OIDC authentication
+  contents: write # Allows pipeline to commit grading.json changes back to repo
 
 jobs:
   terraform:
     name: "Automate Infrastructure"
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./terraform
 
     steps:
-      # 1. Check out the code to the GitHub runner workspace
-      - name: Checkout Source Code
+      # 1. Pull down a copy of your codebase into the runner
+      - name: Checkout Codebase
         uses: actions/checkout@v4
 
-      # 2. Authenticate to AWS via OIDC (Zero long-lived keys stored)
+      # 2. Authenticate to AWS securely via OIDC token swap
       - name: Authenticate to AWS via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }} # e.g., arn:aws:iam::123456789012:role/github-actions-eks-stream
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
+          audience: sts.amazonaws.com
 
-      # 3. Setup Terraform CLI binaries on the runner
+      # 3. Provision the specific Terraform binary environment
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.5.7"
+          terraform_version: 1.5.7
 
-      # 4. Initialize working backend configurations
-      - name: Terraform Init
-        run: terraform init
-
-      # 5. Execute structural format checking validation
+      # 4. Check if your code formatting matches standards (Fails if messy)
       - name: Terraform Format Check
         run: terraform fmt -check
+        working-directory: ./terraform
 
-      # 6. Run Execution Simulation Plan
+      # 5. Initialize working backend configurations cleanly
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
+      # 6. Run an architecture execution simulation (Dry run)
       - name: Terraform Plan
-        id: plan
-        if: github.event_name == 'pull_request'
-        run: terraform plan -no-color -input=false
-        continue-on-error: true
+        run: terraform plan -input=false
+        working-directory: ./terraform
 
-      # 7. Post Plan output directly inside the PR review page panel
-      - name: Update Pull Request Comment
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `#### Terraform Format and Style 🖌
-            #### Terraform Initialization ⚙️
-            #### Terraform Plan 🚀
-            
-            \`\`\`terraform
-            ${process.env.PLAN}
-            \`\`\`
-            
-            *Pushed by: @${context.actor}, Action: \`${context.eventName}\`*`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
-        env:
-          PLAN: "steps.plan.outputs.stdout"
-
-      # 8. Halt pipeline execution if plan fails on PR phase
-      - name: Terraform Plan Status Evaluation
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
-
-      # 9. Apply changes automatically upon merging to Main branch
+      # 7. Execute live physical architecture provisioning (Only on Main push merges)
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
-
-      # 10. Automatically compile the grading payload structure artifact
-      - name: Compile and Commit Grading Artifacts
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: |
-          terraform output -json > ../grading.json
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add ../grading.json
-          git commit -m "chore: automated grading.json updates [skip ci]" || echo "No modifications detected"
-          git push
+        working-directory: ./terraform
