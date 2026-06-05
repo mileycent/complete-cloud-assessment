@@ -4,8 +4,8 @@
 
 resource "aws_eks_cluster" "bedrock" {
   name     = "project-bedrock-cluster"
-  role_arn = aws_iam_role.eks_cluster.arn # References the role from your iam.tf
-  version  = "1.30"
+  role_arn = aws_iam_role.eks_cluster.arn # References your role from iam.tf
+  version  = "1.34"                       # Fixed: Matches your running cluster version
 
   vpc_config {
     subnet_ids              = aws_subnet.private[*].id
@@ -29,7 +29,7 @@ resource "aws_eks_cluster" "bedrock" {
 resource "aws_eks_node_group" "bedrock_nodes" {
   cluster_name    = aws_eks_cluster.bedrock.name
   node_group_name = "project-bedrock-node-group"
-  node_role_arn   = aws_iam_role.eks_nodes.arn # References the role from your iam.tf
+  node_role_arn   = aws_iam_role.eks_nodes.arn # References your role from iam.tf
   subnet_ids      = aws_subnet.private[*].id
 
   scaling_config {
@@ -44,8 +44,6 @@ resource "aws_eks_node_group" "bedrock_nodes" {
 
   instance_types = ["t3.medium"]
   ami_type       = "AL2_x86_64"
-
-  # REMOVED: Explicit depends_on array to prevent naming mismatches with iam.tf
 }
 
 # ==========================================
