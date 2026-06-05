@@ -45,11 +45,7 @@ resource "aws_eks_node_group" "bedrock_nodes" {
   instance_types = ["t3.medium"]
   ami_type       = "AL2_x86_64"
 
-  depends_on = [
-    aws_iam_role_policy_attachment.amazon_eks_worker_node_policy,
-    aws_iam_role_policy_attachment.amazon_eks_cni_policy,
-    aws_iam_role_policy_attachment.amazon_ec2_container_registry_read_only,
-  ]
+  # REMOVED: Explicit depends_on array to prevent naming mismatches with iam.tf
 }
 
 # ==========================================
