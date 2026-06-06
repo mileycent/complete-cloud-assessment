@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bedrock-db-config
+  namespace: default
+data:
+  MYSQL_HOST: "bedrock-mysql-instance.336879875316.us-east-1.rds.amazonaws.com" # Placeholder: Update with your real RDS endpoint if different
+  MYSQL_PORT: "3306"
+  MYSQL_DB_NAME: "retail_store"
+  POSTGRES_HOST: "bedrock-postgres-instance.336879875316.us-east-1.rds.amazonaws.com"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB_NAME: "order_management"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bedrock-db-credentials
+  namespace: default
+type: Opaque
+data:
+  # Base64 encoded values matching the passwords in your rds.tf
+  MYSQL_USER: ZGJfYWRtaW4=                  # "db_admin"
+  MYSQL_PASS: QmVkcm9ja1NlY3VyZVBhc3MyMDI2IQ==  # "BedrockSecurePass2026!"
+  POSTGRES_USER: cG9zdGdyZXNfYWRtaW4=       # "postgres_admin"
+  POSTGRES_PASS: QmVkcm9ja1NlY3VyZVBhc3MyMDI2IQ==  # "BedrockSecurePass2026!"

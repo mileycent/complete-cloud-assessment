@@ -19,6 +19,53 @@ spec:
         image: nginx:latest
         ports:
         - containerPort: 80
+        # =======================================================
+        # PARAMETER CHECK: Injecting RDS Environment Variables
+        # =======================================================
+        env:
+        # MySQL Connection Data
+        - name: DB_MYSQL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: bedrock-db-config
+              key: MYSQL_HOST
+        - name: DB_MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: bedrock-db-credentials
+              key: MYSQL_USER
+        - name: DB_MYSQL_PASS
+          valueFrom:
+            secretKeyRef:
+              name: bedrock-db-credentials
+              key: MYSQL_PASS
+        - name: DB_MYSQL_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: bedrock-db-config
+              key: MYSQL_DB_NAME
+
+        # PostgreSQL Connection Data
+        - name: DB_POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: bedrock-db-config
+              key: POSTGRES_HOST
+        - name: DB_POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: bedrock-db-credentials
+              key: POSTGRES_USER
+        - name: DB_POSTGRES_PASS
+          valueFrom:
+            secretKeyRef:
+              name: bedrock-db-credentials
+              key: POSTGRES_PASS
+        - name: DB_POSTGRES_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: bedrock-db-config
+              key: POSTGRES_DB_NAME
 ---
 apiVersion: v1
 kind: Service
