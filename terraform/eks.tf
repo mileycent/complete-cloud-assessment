@@ -43,15 +43,14 @@ resource "aws_eks_node_group" "bedrock_nodes" {
   }
 
   instance_types = ["t3.medium"]
-
-  # Matches the strict AWS provider string specification for K8s 1.34+
-  ami_type = "AL2023_x86_64_STANDARD"
+  ami_type       = "AL2023_x86_64_STANDARD"
 }
 
 # ==========================================
-# 3. EKS ACCESS ENTRIES (RBAC)
+# 3. EKS ACCESS ENTRIES (RBAC & DEVELOPERS)
 # ==========================================
 
+# Developer Read-Only Access
 resource "aws_eks_access_entry" "dev_view_entry" {
   cluster_name  = aws_eks_cluster.bedrock.name
   principal_arn = "arn:aws:iam::336879875316:user/bedrock-dev-view"
@@ -62,6 +61,23 @@ resource "aws_eks_access_policy_association" "dev_view_policy" {
   cluster_name  = aws_eks_cluster.bedrock.name
   principal_arn = aws_eks_access_entry.dev_view_entry.principal_arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
+# Local CLI Administrator Access - UPDATED WITH YOUR REAL ARN
+resource "aws_eks_access_entry" "local_admin_entry" {
+  cluster_name  = aws_eks_cluster.bedrock.name
+  principal_arn = "arn:aws:iam::336879875316:user/admin-user"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "local_admin_policy" {
+  cluster_name  = aws_eks_cluster.bedrock.name
+  principal_arn = aws_eks_access_entry.local_admin_entry.principal_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
   access_scope {
     type = "cluster"
