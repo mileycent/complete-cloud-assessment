@@ -6,7 +6,7 @@ resource "aws_s3_bucket" "assets" {
 data "archive_file" "lambda_zip" {
   type        = "zip"
   output_path = "${path.module}/lambda_function.zip"
-  
+
   source {
     content  = "def lambda_handler(event, context):\n    print('S3 Event Processed Successfully!')\n    return {'statusCode': 200}"
     filename = "index.py"
