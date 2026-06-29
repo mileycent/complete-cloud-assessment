@@ -1,71 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bedrock-api
+  name: bedrock-retail-ui
   labels:
-    app: bedrock-api
+    app: retail-ui
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: bedrock-api
+      app: retail-ui
   template:
     metadata:
       labels:
-        app: bedrock-api
+        app: retail-ui
     spec:
       containers:
-      - name: web-app
-        image: nginx:latest
+      - name: web-ui
+        # Fixed: Corrected the repository name to 'retail-store-sample-ui' and updated tag to '1.2.1'
+        image: public.ecr.aws/aws-containers/retail-store-sample-ui:1.2.1
         ports:
-        - containerPort: 80
-        # =======================================================
-        # PARAMETER CHECK: Injecting RDS Environment Variables
-        # =======================================================
+        - containerPort: 8080
         env:
-        # MySQL Connection Data
+        - name: APP_VERSION
+          value: "v1.2.1"
         - name: DB_MYSQL_HOST
           valueFrom:
             configMapKeyRef:
               name: bedrock-db-config
               key: MYSQL_HOST
-        - name: DB_MYSQL_USER
-          valueFrom:
-            secretKeyRef:
-              name: bedrock-db-credentials
-              key: MYSQL_USER
-        - name: DB_MYSQL_PASS
-          valueFrom:
-            secretKeyRef:
-              name: bedrock-db-credentials
-              key: MYSQL_PASS
-        - name: DB_MYSQL_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: bedrock-db-config
-              key: MYSQL_DB_NAME
-
-        # PostgreSQL Connection Data
         - name: DB_POSTGRES_HOST
           valueFrom:
             configMapKeyRef:
               name: bedrock-db-config
               key: POSTGRES_HOST
-        - name: DB_POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: bedrock-db-credentials
-              key: POSTGRES_USER
-        - name: DB_POSTGRES_PASS
-          valueFrom:
-            secretKeyRef:
-              name: bedrock-db-credentials
-              key: POSTGRES_PASS
-        - name: DB_POSTGRES_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: bedrock-db-config
-              key: POSTGRES_DB_NAME
 ---
 apiVersion: v1
 kind: Service
@@ -74,8 +41,8 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app: bedrock-api
+    app: retail-ui
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 80
+      targetPort: 8080
